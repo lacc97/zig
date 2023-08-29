@@ -9155,6 +9155,10 @@ fn finishFunc(
             .x86, .aarch64, .aarch64_be, .aarch64_32 => null,
             else => @as([]const u8, "x86 and AArch64"),
         },
+        .GHC, .PreserveMost, .PreserveAll => switch (arch) {
+            .x86, .x86_64 => null,
+            else => @as([]const u8, "x86 and x86_64"),
+        },
         .APCS, .AAPCS, .AAPCSVFP => switch (arch) {
             .arm, .armeb, .aarch64, .aarch64_be, .aarch64_32, .thumb, .thumbeb => null,
             else => @as([]const u8, "ARM"),

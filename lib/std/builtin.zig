@@ -170,6 +170,10 @@ pub const CallingConvention = enum(u8) {
     Vectorcall,
     /// x86-only.
     Thiscall,
+    /// TODO:
+    GHC,
+    PreserveMost,
+    PreserveAll,
     /// ARM Procedure Call Standard (obsolete)
     /// ARM-only.
     APCS,
