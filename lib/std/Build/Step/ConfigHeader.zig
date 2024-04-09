@@ -34,7 +34,7 @@ pub const Value = union(enum) {
 
 step: Step,
 values: std.StringArrayHashMap(Value),
-output_file: std.Build.GeneratedFile,
+output_base_path: std.Build.GeneratedFile,
 
 style: Style,
 max_bytes: usize,
@@ -59,7 +59,7 @@ pub fn create(owner: *std.Build, options: Options) *ConfigHeader {
     if (options.style.getPath()) |s| default_include_path: {
         const sub_path = switch (s.root) {
             .build, .cwd => s.path,
-            .generated, .generated_dirname => break :default_include_path,
+            .generated_root, .generated, .generated_dirname => break :default_include_path,
         };
         const basename = std.fs.path.basename(sub_path);
         if (std.mem.endsWith(u8, basename, ".h.in")) {
@@ -92,7 +92,7 @@ pub fn create(owner: *std.Build, options: Options) *ConfigHeader {
         .max_bytes = options.max_bytes,
         .include_path = include_path,
         .include_guard_override = options.include_guard_override,
-        .output_file = .{ .step = &self.step },
+        .output_base_path = .{ .step = &self.step },
     };
 
     return self;
@@ -103,7 +103,11 @@ pub fn addValues(self: *ConfigHeader, values: anytype) void {
 }
 
 pub fn getOutput(self: *ConfigHeader) std.Build.LazyPath {
-    return self.step.owner.pathGenerated(&self.output_file);
+    return .{
+        .owner = self.step.owner,
+        .path = self.include_path,
+        .root = .{ .generated_root = &self.output_base_path },
+    };
 }
 
 fn addValuesInner(self: *ConfigHeader, values: anytype) !void {
@@ -213,9 +217,7 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
 
     if (try step.cacheHit(&man)) {
         const digest = man.final();
-        self.output_file.path = try b.cache_root.join(arena, &.{
-            "o", &digest, self.include_path,
-        });
+        self.output_base_path.path = try b.cache_root.join(arena, &.{ "o", &digest });
         return;
     }
 
@@ -241,7 +243,7 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
         });
     };
 
-    self.output_file.path = try b.cache_root.join(arena, &.{sub_path});
+    self.output_base_path.path = try b.cache_root.join(arena, &.{ "o", &digest });
     try man.writeManifest();
 }
 
