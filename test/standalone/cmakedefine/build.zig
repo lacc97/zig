@@ -88,7 +88,7 @@ fn compare_headers(step: *std.Build.Step, prog_node: *std.Progress.Node) !void {
     for (step.dependencies.items) |config_header_step| {
         const config_header: *ConfigHeader = @fieldParentPtr("step", config_header_step);
 
-        const zig_header_path = config_header.output_file.path orelse @panic("Could not locate header file");
+        const zig_header_path = config_header.getOutput().getPath2(step.owner, step);
 
         const cwd = std.fs.cwd();
 

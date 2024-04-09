@@ -34,7 +34,7 @@ pub const Value = union(enum) {
 
 step: Step,
 values: std.StringArrayHashMap(Value),
-output_file: std.Build.GeneratedFile,
+output_root: std.Build.GeneratedRoot,
 
 style: Style,
 max_bytes: usize,
@@ -92,7 +92,7 @@ pub fn create(owner: *std.Build, options: Options) *ConfigHeader {
         .max_bytes = options.max_bytes,
         .include_path = include_path,
         .include_guard_override = options.include_guard_override,
-        .output_file = .{ .step = &self.step },
+        .output_root = .{ .step = &self.step },
     };
 
     return self;
@@ -103,7 +103,7 @@ pub fn addValues(self: *ConfigHeader, values: anytype) void {
 }
 
 pub fn getOutput(self: *ConfigHeader) std.Build.LazyPath {
-    return std.Build.LazyPath.generatedFile(&self.output_file);
+    return std.Build.LazyPath.generated(&self.output_root, self.include_path);
 }
 
 fn addValuesInner(self: *ConfigHeader, values: anytype) !void {
@@ -213,9 +213,7 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
 
     if (try step.cacheHit(&man)) {
         const digest = man.final();
-        self.output_file.path = try b.cache_root.join(arena, &.{
-            "o", &digest, self.include_path,
-        });
+        self.output_root.path = try b.cache_root.join(arena, &.{ "o", &digest });
         return;
     }
 
@@ -241,7 +239,7 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
         });
     };
 
-    self.output_file.path = try b.cache_root.join(arena, &.{sub_path});
+    self.output_root.path = try b.cache_root.join(arena, &.{ "o", &digest });
     try man.writeManifest();
 }
 

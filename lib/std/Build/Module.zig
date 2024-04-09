@@ -126,7 +126,6 @@ pub const IncludeDir = union(enum) {
     framework_path: LazyPath,
     framework_path_system: LazyPath,
     other_step: *Step.Compile,
-    config_header_step: *Step.ConfigHeader,
 };
 
 pub const LinkFrameworkOptions = struct {
@@ -547,7 +546,7 @@ pub fn addIncludePath(m: *Module, lazy_path: LazyPath) void {
 
 pub fn addConfigHeader(m: *Module, config_header: *Step.ConfigHeader) void {
     const allocator = m.owner.allocator;
-    m.include_dirs.append(allocator, .{ .config_header_step = config_header }) catch @panic("OOM");
+    m.include_dirs.append(allocator, .{ .path = LazyPath.generated(&config_header.output_root, "") }) catch @panic("OOM");
     addStepDependenciesOnly(m, &config_header.step);
 }
 
@@ -692,11 +691,6 @@ pub fn appendZigProcessFlags(
                 if (other.installed_headers_include_tree) |include_tree| {
                     try zig_args.appendSlice(&.{ "-I", include_tree.generated_directory.getPath() });
                 }
-            },
-            .config_header_step => |config_header| {
-                const full_file_path = config_header.output_file.getPath();
-                const header_dir_path = full_file_path[0 .. full_file_path.len - config_header.include_path.len];
-                try zig_args.appendSlice(&.{ "-I", header_dir_path });
             },
         }
     }
